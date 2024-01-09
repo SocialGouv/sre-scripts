@@ -14,7 +14,7 @@ const selectedContexts = localContexts
 const myCnpgClusters = await Promise.all(
   selectedContexts.map(async (context) => {
     const { stdout: pgClusters } =
-      await $`kubectl get --context=${context} -A clusters.postgresql.cnpg.io --no-headers -o=jsonpath='{range .items[*]}{@.metadata.namespace}{"|"}{@.metadata.name}{"\\n"}{end}'`;
+      await $`kubectl get --context=${context} -A clusters.postgresql.cnpg.io -o jsonpath='{range .items[*]}{@.metadata.namespace}{"|"}{@.metadata.name}{"\\n"}{end}'`;
     return pgClusters
       .trim()
       .split("\n")
