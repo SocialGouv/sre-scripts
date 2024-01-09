@@ -1,5 +1,7 @@
 #!/usr/bin/env zx
 
+const projectSubString = process.argv[3] || "";
+
 const fabContexts = ["dev", "prod", "ovh-dev", "ovh-prod"];
 const port = "54321";
 
@@ -14,6 +16,7 @@ const selectedContexts = localContexts
 let myCnpgClusters = [];
 
 try {
+  // for cluster admins
   myCnpgClusters = await Promise.all(
     selectedContexts.map(async (context) => {
       const { stdout: services } =
@@ -32,7 +35,7 @@ try {
     }),
   );
 } catch (e) {
-  // when user has not the permission to list all cnpg clusters
+  // for non-admin user that has not the permission to list all cnpg clusters
 
   myCnpgClusters = await Promise.all(
     selectedContexts.map(async (context) => {
@@ -42,6 +45,7 @@ try {
       const namespaces = rawNamespaces
         .trim()
         .split("\n")
+        .filter((ns) => ns.includes(projectSubString))
         .map((ns) => ns.replace("namespace/", ""));
 
       const clusters = await Promise.all(
