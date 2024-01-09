@@ -1,6 +1,6 @@
 # kdb
 
-Script qui permet de choisir un CNPG parmi tous ceux auxquels on a accès, puis de lancer le port-forward et la DATABASE_URL adaptée au localhost.
+Script qui permet de choisir un CNPG parmi tous ceux auxquels on a accès, puis de lancer le port-forward et afficher la DATABASE_URL adaptée au localhost.
 
 Utilisation :
 
