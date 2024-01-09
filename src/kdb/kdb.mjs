@@ -11,19 +11,64 @@ const selectedContexts = localContexts
   .split("\n")
   .filter((c) => fabContexts.includes(c));
 
-const myCnpgClusters = await Promise.all(
-  selectedContexts.map(async (context) => {
-    const { stdout: pgClusters } =
-      await $`kubectl get --context=${context} -A clusters.postgresql.cnpg.io -o jsonpath='{range .items[*]}{@.metadata.namespace}{"|"}{@.metadata.name}{"\\n"}{end}'`;
-    return pgClusters
-      .trim()
-      .split("\n")
-      .map((cluster) => {
-        const [ns, name] = cluster.split("|");
-        return { context, ns, name };
-      });
-  }),
-);
+let myCnpgClusters = [];
+
+try {
+  myCnpgClusters = await Promise.all(
+    selectedContexts.map(async (context) => {
+      const { stdout: services } =
+        await $`kubectl get --context=${context} -A svc -o jsonpath='{range .items[*]}{@.metadata.namespace}{"|"}{@.metadata.name}{"\\n"}{end}' | grep "\\-rw"`;
+      return services
+        .trim()
+        .split("\n")
+        .map((cluster) => {
+          const [ns, name] = cluster.split("|");
+          return {
+            context,
+            ns,
+            name: name.replace("service/", "").replace("-rw", ""),
+          };
+        });
+    }),
+  );
+} catch (e) {
+  // when user has not the permission to list all cnpg clusters
+
+  myCnpgClusters = await Promise.all(
+    selectedContexts.map(async (context) => {
+      const { stdout: rawNamespaces } =
+        await $`kubectl get --context=${context} ns -o name`;
+
+      const namespaces = rawNamespaces
+        .trim()
+        .split("\n")
+        .map((ns) => ns.replace("namespace/", ""));
+
+      const clusters = await Promise.all(
+        namespaces.map(async (ns) => {
+          try {
+            const { stdout: services } =
+              await $`kubectl get --context=${context} -n ${ns} svc -o name | grep "\\-rw"`;
+            return services
+              .trim()
+              .split("\n")
+              .map((name) => {
+                return {
+                  context,
+                  ns,
+                  name: name.replace("service/", "").replace("-rw", ""),
+                };
+              });
+          } catch (e) {
+            // no permission in this namespace
+            return [];
+          }
+        }),
+      );
+      return [].concat.apply([], clusters);
+    }),
+  );
+}
 
 $.verbose = true;
 
