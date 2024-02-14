@@ -90,13 +90,15 @@ const [context, ns, name] = selectedClusterAsString.trim().split(" | ");
 const { stdout: dbUrl } =
   await $`kubectl get --context ${context} -n ${ns} secret ${name}-app -o jsonpath="{.data.DATABASE_URL}" | base64 --decode`;
 
+const localDbUrl = dbUrl
+  .replace("sslmode=require", "sslmode=disable")
+  .replace(`@${name}-rw:5432`, `@localhost:${port}`);
+
 console.log(`
 
 DATABASE_URL:
 
-${dbUrl
-  .replace("sslmode=require", "sslmode=disable")
-  .replace(`@${name}-rw:5432`, `@localhost:${port}`)}
+${localDbUrl}
 `);
 
 $`kubectl --context ${context} -n ${ns} port-forward svc/${name}-rw ${port}:5432`;
